@@ -7,12 +7,14 @@ const uuid = require('uuid');
 const { streamEvents } = require('http-event-stream');
 const Router = require('koa-router');
 const moment = require('moment');
+const WS = require('ws');        
 
-const port = process.env.PORT || 7073;
 const app = new Koa();
+const server = http.createServer(app.callback());
+const port = process.env.PORT || 7071;
 const publ = path.join(__dirname, '/public');
 const koaStatic = require('koa-static');
-
+const wsServer = new WS.Server({ server });              
 const router = new Router();
 
 app.use(async (ctx, next) => {
@@ -126,6 +128,105 @@ app.use(async (ctx) => {
 });
 
 
+
+
+// Чат
+let messages = [];
+let names = [];
+let online = [];
+
+wsServer.on('connection', (ws, req) => {
+  const errCallback = (err) => {
+  if (err) {
+  // TODO: handle error
+  }
+  }
+
+  const interval = setInterval(() => {
+    Array.from(wsServer.clients)
+  .filter(o => o.readyState === WS.OPEN)
+  .forEach(o => o.send(JSON.stringify({
+    type: 'online?',    
+  }  )));
+
+  Array.from(wsServer.clients)
+  .filter(o => o.readyState === WS.OPEN)
+  .forEach(o => o.send(JSON.stringify({
+    type: 'online', message: online,    
+  }  )));
+
+  online = [];
+ 
+  }, 5000);
+
+  ws.on('message', msg => {
+    let message = JSON.parse(msg);
+    console.log(message.type);
+    if(message.type === 'input'){
+    
+    if(names.indexOf(message.name) > -1){
+      ws.send(JSON.stringify({
+        type: 'input',
+        name: true,
+      }));
+    } else{
+      ws.send(JSON.stringify({
+        type: 'input',
+        name: false,
+      }));
+    }
+  }else if(message.type === 'registration'){
+    names.push(message.name);
+    console.log(names)
+    ws.send(JSON.stringify({
+      type: 'input',
+      name: true,      
+    }));
+  } else if(message.type === 'message'){
+    const time = moment().format('hh:mm:ss DD.MM.YY');
+    message.time = String(time);
+    messages.push(message);
+
+    Array.from(wsServer.clients)
+    .filter(o => o.readyState === WS.OPEN)
+    .forEach(o => o.send(JSON.stringify(message)));
+  }else if(message.type === 'messageAll'){
+    ws.send(JSON.stringify({
+      type: 'messageAll',
+      message: messages,      
+    }));
+  } else if(message.type === 'online'){
+    online.push(message.name);
+  }
+ 
+    console.log(msg);
+
+ /*  Array.from(wsServer.clients)
+  .filter(o => o.readyState === WS.OPEN)
+  .forEach(o => o.send('some message')); */
+   
+              
+        
+
+ // ws.send('response', errCallback);
+  });
+  ws.send('welcome', errCallback);
+  });
+           
+                
+            
+          
+        
+      
+   
+            
+        
+          
+      
+   
+        
+   
+
 /* app.use(koaBody({
   urlencoded: true,
   multipart: true,
@@ -174,4 +275,5 @@ app.use(async (ctx) => {
     catalog = fs.readdirSync(publ);
   }
 }); */
-const server = http.createServer(app.callback()).listen(port);
+
+server.listen(port);

@@ -11,7 +11,7 @@ const WS = require('ws');
 
 const app = new Koa();
 const server = http.createServer(app.callback());
-const port = process.env.PORT || 7071;
+const port = process.env.PORT || 7075;
 const publ = path.join(__dirname, '/public');
 const koaStatic = require('koa-static');
 const wsServer = new WS.Server({ server });              
@@ -197,18 +197,8 @@ wsServer.on('connection', (ws, req) => {
     }));
   } else if(message.type === 'online'){
     online.push(message.name);
-  }
- 
-    console.log(msg);
-
- /*  Array.from(wsServer.clients)
-  .filter(o => o.readyState === WS.OPEN)
-  .forEach(o => o.send('some message')); */
-   
-              
-        
-
- // ws.send('response', errCallback);
+  } 
+    console.log(msg); 
   });
   ws.send('welcome', errCallback);
   });

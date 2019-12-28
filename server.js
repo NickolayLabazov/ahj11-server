@@ -18,6 +18,9 @@ const wsServer = new WS.Server({ server });
 const router = new Router();
 
 app.use(async (ctx, next) => {
+
+  ctx.response.body = 'server response';
+
   const origin = ctx.request.get('Origin');
   if (!origin) {
     return await next();
